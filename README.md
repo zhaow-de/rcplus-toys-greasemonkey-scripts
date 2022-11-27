@@ -29,6 +29,7 @@ Then, add a new user script by copy/paste. TamperMonkey periodically check the v
 
 ### Change History
 
+* 20221127: **0.2** Reworked the list elements waiting logic to handle React DOM lazy loading
 * 20221126: **0.1** Initial release
 
 ---

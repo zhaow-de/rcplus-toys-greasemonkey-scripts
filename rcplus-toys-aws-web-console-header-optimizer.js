@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         rcplus-toys-aws-web-console-header-optimizer
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Optimize the web console header area
 // @author       zhaow
 // @license      MIT
@@ -12,14 +12,15 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
   'use strict';
 
-  /*
-   * With AWS SSO, the username text in the top-right corner is ultra long, and it does not display
-   * the AWS account information. Here we change it to 'role @ account' format. Our AWS SSO uses
-   * Okta as the upstream IdP, so the concrete username is almost always constant --> we hide it.
-   */
+  // ===================================================================================================================
+  //
+  // With AWS SSO, the username text in the top-right corner is ultra long, and it does not display
+  // the AWS account information. Here we change it to 'role @ account' format. Our AWS SSO uses
+  // Okta as the upstream IdP, so the concrete username is almost always constant --> we hide it.
+  //
   try {
     const id_title = document.getElementsByClassName('_1Vtx1Z7gxtNZJP2MVzVCLO')[2].title;
     let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
@@ -27,31 +28,24 @@
     let role = results[1];
     let account = results[3];
     document.getElementsByClassName('_1Vtx1Z7gxtNZJP2MVzVCLO')[2].innerHTML = `${role} @ ${account}`;
-  } catch(err) {
+  } catch (err) {
     console.log('[rcplus-toys] the current user does not seem like a RC+ SSO user. Error: ' + err.message);
   }
 
-  /*
-   * Reduce the padding of navigation bar items, and shorten some names with abbreviation
-   */
-
-  function hasAllValuesArrived(list) {
-    const texts = list.querySelectorAll('li a span');
-    for (let t of texts) {
-      if (t.innerText.length === 0) return false;
-    }
-    return true;
-  }
-
-  function waitForElementsLazyLoading(selector) {
+  // ===================================================================================================================
+  //
+  // Reduce the padding of navigation bar items, and shorten some names with abbreviation
+  //
+  async function waitForElement(parent, selector) {
     return new Promise((resolve) => {
-      const initial_check = document.querySelector(selector);
-      if (initial_check && hasAllValuesArrived(initial_check)) {
+      const initial_check = parent.querySelector(selector);
+      if (initial_check) {
         return resolve(initial_check);
       }
-      const observer = new MutationObserver((mutations) => {
-        const repeating_check = document.querySelector(selector);
-        if (repeating_check && hasAllValuesArrived(repeating_check)) {
+      const observer = new MutationObserver((mutation) => {
+        console.log('ReptCheck:', mutation);
+        const repeating_check = parent.querySelector(selector);
+        if (repeating_check) {
           resolve(repeating_check);
           observer.disconnect();
         }
@@ -59,12 +53,40 @@
       observer.observe(document.body, {
         childList: true,
         subtree: true,
-        attributes: true,
       });
     });
   }
 
-  waitForElementsLazyLoading('div#awsc-navigation-container > div nav ol').then((list) => {
+  function allChildrenHaveValues(items) {
+    for (let item of items) {
+      if (item.innerText.length === 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  async function waitForLazyLoadingElements(parent, selector) {
+    return new Promise((resolve) => {
+      const initial_check = parent.querySelectorAll(selector);
+      if (initial_check && allChildrenHaveValues(initial_check)) {
+        return resolve(initial_check);
+      }
+      const observer = new MutationObserver(() => {
+        const repeating_check = parent.querySelectorAll(selector);
+        if (repeating_check && allChildrenHaveValues(repeating_check)) {
+          resolve(repeating_check);
+          observer.disconnect();
+        }
+      });
+      observer.observe(parent, {
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
+
+  function reducePaddingAndIconSize(list) {
     const items = list.querySelectorAll('li');
     items.forEach((node) => {
       const link = node.getElementsByTagName('a')[0];
@@ -73,68 +95,81 @@
       imageFrame.setAttribute('style', 'width:12px !important; height:12px !important;');
       const image = link.getElementsByTagName('img')[0];
       image.setAttribute('style', 'width:12px !important; height:12px !important;');
-      const text = link.getElementsByTagName('span')[0];
-      text.setAttribute('style', 'font-size:12px !important;');
-      switch (text.innerHTML) {
+    })
+  }
+
+  function shortenText(items) {
+    items.forEach((item) => {
+      item.setAttribute('style', 'font-size:12px !important;');
+      switch (item.innerHTML) {
         case 'Amazon EventBridge':
-          text.innerHTML = 'EventBridge';
+          item.innerHTML = 'EventBridge';
           break;
         case 'Amazon OpenSearch Service':
-          text.innerHTML = 'OpenSearch';
+          item.innerHTML = 'OpenSearch';
           break;
         case 'Amazon Simple Email Service':
-          text.innerHTML = 'SES';
+          item.innerHTML = 'SES';
           break;
         case 'Amazon SageMaker':
-          text.innerHTML = 'SageMaker';
+          item.innerHTML = 'SageMaker';
           break;
         case 'Amazon WorkMail':
-          text.innerHTML = 'Mail';
+          item.innerHTML = 'Mail';
           break;
         case 'API Gateway':
-          text.innerHTML = 'API';
+          item.innerHTML = 'API';
           break;
         case 'AWS Glue':
-          text.innerHTML = 'Glue';
+          item.innerHTML = 'Glue';
           break;
         case 'Certificate Manager':
-          text.innerHTML = 'Cert';
+          item.innerHTML = 'Cert';
           break;
         case 'Control Tower':
-          text.innerHTML = 'ControlTower';
+          item.innerHTML = 'ControlTower';
           break;
         case 'Elastic Container Registry':
-          text.innerHTML = 'ECR';
+          item.innerHTML = 'ECR';
           break;
         case 'Elastic Container Service':
-          text.innerHTML = 'ECS';
+          item.innerHTML = 'ECS';
           break;
         case 'Elastic Kubernetes Service':
-          text.innerHTML = 'EKS';
+          item.innerHTML = 'EKS';
           break;
         case 'IAM Identity Center (successor to AWS Single Sign-On)':
-          text.innerHTML = 'SSO';
+          item.innerHTML = 'SSO';
           break;
         case 'Key Management Service':
-          text.innerHTML = 'KMS';
+          item.innerHTML = 'KMS';
           break;
         case 'Route 53':
-          text.innerHTML = 'R53';
+          item.innerHTML = 'R53';
           break;
         case 'Simple Notification Service':
-          text.innerHTML = 'SNS';
+          item.innerHTML = 'SNS';
           break;
         case 'Simple Queue Service':
-          text.innerHTML = 'SQS';
+          item.innerHTML = 'SQS';
           break;
         case 'Step Functions':
-          text.innerHTML = 'StepFunc';
+          item.innerHTML = 'StepFunc';
           break;
         case 'Systems Manager':
-          text.innerHTML = 'SysMgr';
+          item.innerHTML = 'SysMgr';
           break;
       }
     })
+  }
+
+  async function compressFavorites() {
+    const list = await waitForElement(document.body, 'div nav > div:last-child > div ol');
+    reducePaddingAndIconSize(list);
+    const items = await waitForLazyLoadingElements(list, 'li > a > div > span');
+    shortenText(items);
     window.dispatchEvent(new Event('resize'));
-  })
+  }
+
+  compressFavorites().then(() => console.log("aws-web-console-header-optimizer succeeded")).catch(console.error);
 })();

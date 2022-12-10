@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         rcplus-toys-aws-web-console-header-optimizer
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  Optimize the web console header area
 // @author       zhaow
 // @license      MIT
@@ -22,12 +22,13 @@
   // Okta as the upstream IdP, so the concrete username is almost always constant --> we hide it.
   //
   try {
-    const id_title = document.getElementsByClassName('_1Vtx1Z7gxtNZJP2MVzVCLO')[2].title;
+    const usernameNode = document.querySelector('button#nav-usernameMenu > span > span')
+    const idTitle = usernameNode.title;
     let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
-    let results = re.exec(id_title);
+    let results = re.exec(idTitle);
     let role = results[1];
     let account = results[3];
-    document.getElementsByClassName('_1Vtx1Z7gxtNZJP2MVzVCLO')[2].innerHTML = `${role} @ ${account}`;
+    usernameNode.innerHTML = `${role} @ ${account}`;
   } catch (err) {
     console.log('[rcplus-toys] the current user does not seem like a RC+ SSO user. Error: ' + err.message);
   }
@@ -43,7 +44,6 @@
         return resolve(initial_check);
       }
       const observer = new MutationObserver((mutation) => {
-        console.log('ReptCheck:', mutation);
         const repeating_check = parent.querySelector(selector);
         if (repeating_check) {
           resolve(repeating_check);
@@ -119,6 +119,9 @@
           break;
         case 'API Gateway':
           item.innerHTML = 'API';
+          break;
+        case 'AWS Chatbot':
+          item.innerHTML = 'Chatbot';
           break;
         case 'AWS Glue':
           item.innerHTML = 'Glue';

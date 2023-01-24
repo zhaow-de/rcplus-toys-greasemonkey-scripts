@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         rcplus-toys-aws-web-console-header-optimizer
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Optimize the web console header area
 // @author       zhaow
 // @license      MIT
@@ -125,6 +125,9 @@
           break;
         case 'AWS Glue':
           item.innerHTML = 'Glue';
+          break;
+        case 'AWS Marketplace Subscriptions':
+          item.innerHTML = 'Marketplace';
           break;
         case 'Certificate Manager':
           item.innerHTML = 'Cert';

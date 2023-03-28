@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         rcplus-toys-aws-web-console-header-optimizer
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Optimize the web console header area
 // @author       zhaow
 // @license      MIT
@@ -163,7 +163,7 @@
           item.innerHTML = 'StepFunc';
           break;
         case 'Systems Manager':
-          item.innerHTML = 'SysMgr';
+          item.innerHTML = 'SSM';
           break;
       }
     })

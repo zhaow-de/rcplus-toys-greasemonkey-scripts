@@ -25,10 +25,8 @@
     try {
       const usernameNode = await waitForElement(document, 'button#nav-usernameMenu > span > span', 'title')
       const idTitle = usernameNode.title
-      console.log({idTitle})
       let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
       let results = re.exec(idTitle);
-      console.log({results})
       let role = results[1];
       let account = results[3];
       usernameNode.innerHTML = `${role} @ ${account}`;

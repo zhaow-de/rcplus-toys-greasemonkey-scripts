@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         rcplus-toys-aws-web-console-header-optimizer
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Optimize the web console header area
 // @author       zhaow
 // @license      MIT
@@ -21,33 +21,38 @@
   // the AWS account information. Here we change it to 'role @ account' format. Our AWS SSO uses
   // Okta as the upstream IdP, so the concrete username is almost always constant --> we hide it.
   //
-  try {
-    const usernameNode = document.querySelector('button#nav-usernameMenu > span > span')
-    const idTitle = usernameNode.title;
-    let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
-    let results = re.exec(idTitle);
-    let role = results[1];
-    let account = results[3];
-    usernameNode.innerHTML = `${role} @ ${account}`;
-  } catch (err) {
-    console.log('[rcplus-toys] the current user does not seem like a RC+ SSO user. Error: ' + err.message);
+  async function replaceUsername() {
+    try {
+      const usernameNode = await waitForElement(document, 'button#nav-usernameMenu > span > span', 'title')
+      const idTitle = usernameNode.title
+      let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
+      let results = re.exec(idTitle);
+      let role = results[1];
+      let account = results[3];
+      usernameNode.innerHTML = `${role} @ ${account}`;
+    } catch (err) {
+      console.log('[rcplus-toys] the current user does not seem like a RC+ SSO user. Error: ' + err);
+    }
   }
 
   // ===================================================================================================================
   //
   // Reduce the padding of navigation bar items, and shorten some names with abbreviation
   //
-  async function waitForElement(parent, selector) {
-    return new Promise((resolve) => {
+  async function waitForElement(parent, selector, attribute) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(`did not find ${selector} within 5 seconds`), 5e3)
       const initial_check = parent.querySelector(selector);
-      if (initial_check) {
+      if (initial_check && (!attribute || initial_check[attribute])) {
+        clearTimeout(timeout)
         return resolve(initial_check);
       }
       const observer = new MutationObserver((mutation) => {
         const repeating_check = parent.querySelector(selector);
-        if (repeating_check) {
-          resolve(repeating_check);
+        if (repeating_check && (!attribute || repeating_check[attribute])) {
           observer.disconnect();
+          clearTimeout(timeout)
+          resolve(repeating_check);
         }
       });
       observer.observe(document.body, {
@@ -176,6 +181,16 @@
     shortenText(items);
     window.dispatchEvent(new Event('resize'));
   }
+  
+  async function main() {
+    const [username, favorites] = await Promise.allSettled([replaceUsername(), compressFavorites()])
+    if (username.status === 'rejected') {
+      console.error('replaceUsername failed', username.reason)
+    }
+    if (favorites.status === 'rejected') {
+      console.error('compressFavorites failed', favorites.reason)
+    }
+  }
 
-  compressFavorites().then(() => console.log("aws-web-console-header-optimizer succeeded")).catch(console.error);
+  main().then(() => console.log("aws-web-console-header-optimizer finished")).catch(console.error);
 })();

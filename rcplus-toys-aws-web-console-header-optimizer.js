@@ -23,10 +23,12 @@
   //
   async function replaceUsername() {
     try {
-      const usernameNode = await waitForElement(document, 'button#nav-usernameMenu > span > span')
-      const idTitle = usernameNode.title;
+      const usernameNode = await waitForElement(document, 'button#nav-usernameMenu > span > span', 'title')
+      const idTitle = usernameNode.title
+      console.log({idTitle})
       let re = /\w+_([\w-]+)_(\w+)\/.*\s+@\s+(.+)/;
       let results = re.exec(idTitle);
+      console.log({results})
       let role = results[1];
       let account = results[3];
       usernameNode.innerHTML = `${role} @ ${account}`;
@@ -39,17 +41,17 @@
   //
   // Reduce the padding of navigation bar items, and shorten some names with abbreviation
   //
-  async function waitForElement(parent, selector) {
+  async function waitForElement(parent, selector, attribute) {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(`did not find ${selector} within 5 seconds`), 5e3)
       const initial_check = parent.querySelector(selector);
-      if (initial_check) {
+      if (initial_check && (!attribute || initial_check[attribute])) {
         clearTimeout(timeout)
         return resolve(initial_check);
       }
       const observer = new MutationObserver((mutation) => {
         const repeating_check = parent.querySelector(selector);
-        if (repeating_check) {
+        if (repeating_check && (!attribute || repeating_check[attribute])) {
           observer.disconnect();
           clearTimeout(timeout)
           resolve(repeating_check);
